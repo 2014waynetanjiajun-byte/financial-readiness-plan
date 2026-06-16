@@ -305,6 +305,33 @@ export default function StressTestPage() {
                 {/* Critical Illness inputs */}
                 {selected === 'criticalIllness' && (
                   <>
+                    {/* Early vs Late CI toggle */}
+                    <div className="space-y-1.5">
+                      <Label>Type of Critical Illness</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(['early', 'late'] as const).map((type) => (
+                          <button
+                            key={type}
+                            onClick={() => upd('criticalIllnessType', type)}
+                            className={`py-2.5 px-3 rounded-lg border-2 text-sm font-medium transition-colors ${
+                              (stressTestInput.criticalIllnessType ?? 'late') === type
+                                ? type === 'early'
+                                  ? 'border-teal-500 bg-teal-50 text-teal-700'
+                                  : 'border-red-500 bg-red-50 text-red-700'
+                                : 'border-muted text-muted-foreground hover:border-primary/40'
+                            }`}
+                          >
+                            {type === 'early' ? 'Early CI (ECI)' : 'Late CI'}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {(stressTestInput.criticalIllnessType ?? 'late') === 'early'
+                          ? 'Early stage — ECI insurance payouts apply. Typically higher chance of occurrence, lower medical cost.'
+                          : 'Late stage — CI insurance payouts apply. More severe, higher medical cost and longer recovery.'}
+                      </p>
+                    </div>
+
                     <div className="space-y-1.5">
                       <Label>At what age are they diagnosed?</Label>
                       <Input type="number" min={plan.client.age} max={80}

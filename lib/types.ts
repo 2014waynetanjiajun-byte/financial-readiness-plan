@@ -286,6 +286,7 @@ export interface YearlyProjection {
   employmentIncome: number;
   passiveIncome: number;
   cpfLifePayout: number;
+  swrWithdrawal: number;
   totalIncome: number;
 
   // Outflows
@@ -381,6 +382,7 @@ export interface StressTestInput {
   criticalIllnessAge: number;
   criticalIllnessMedicalCost: number;
   criticalIllnessRecoveryMonths: number;
+  criticalIllnessType: 'early' | 'late';
   // Permanent Disability
   disabilityAge: number;
   // Job Loss
@@ -525,6 +527,7 @@ export const defaultStressTestInput: StressTestInput = {
   criticalIllnessAge: 50,
   criticalIllnessMedicalCost: 150000,
   criticalIllnessRecoveryMonths: 12,
+  criticalIllnessType: 'late',
   disabilityAge: 45,
   jobLossMonths: 6,
   bearMarketLossPct: 30,

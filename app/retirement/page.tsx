@@ -42,13 +42,12 @@ export default function RetirementPage() {
   const fundingStatus = retirementAnalysis?.fundingStatus ?? 'adequate';
   const statusConfig  = FUNDING_STATUS_CONFIG[fundingStatus];
 
-  // Net worth chart
+  // Net worth chart — CPF OA becomes accessible at 55, so include it in liquid assets from then
   const nwData = projections
     .filter((p) => p.age % 5 === 0 || p.age === plan.client.age || p.age === plan.client.retirementAge || p.age === plan.client.lifeExpectancy)
     .map((p) => ({
       age: p.age,
-      'Liquid Assets': Math.max(0, p.cashBalance + p.investmentBalance + p.srsBalance),
-      'CPF Total': p.cpfTotal,
+      'Liquid Assets': Math.max(0, p.cashBalance + p.investmentBalance + p.srsBalance + (p.age >= 55 ? p.cpfOA : 0)),
     }));
 
   // Passive income sources breakdown (bar)
@@ -104,9 +103,9 @@ export default function RetirementPage() {
               <div className="space-y-2">
                 <Label>Safe Withdrawal Rate (%)</Label>
                 <div className="relative">
-                  <Input type="number" min={1} max={10} step={0.5} className="text-lg font-semibold h-12 pr-8"
-                    value={rg.safeWithdrawalRate || ''}
-                    onChange={(e) => updateGoals({ safeWithdrawalRate: parseFloat(e.target.value) || 4 })} />
+                  <Input type="number" min={0} max={10} step={0.5} className="text-lg font-semibold h-12 pr-8"
+                    value={rg.safeWithdrawalRate ?? ''}
+                    onChange={(e) => updateGoals({ safeWithdrawalRate: parseFloat(e.target.value) || 0 })} />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
                 </div>
                 <p className="text-xs text-muted-foreground">Annual % of portfolio you can withdraw sustainably (4% is standard)</p>
@@ -134,7 +133,7 @@ export default function RetirementPage() {
                   <p className={`text-sm mt-2 ${statusConfig.color} opacity-90`}>
                     {ra.retirementFeasible
                       ? `Projected passive income of ${formatCurrency(ra.totalProjectedPassiveIncome)}/month covers your target of ${formatCurrency(ra.monthlyPassiveIncomeTarget)}/month at retirement.`
-                      : `There is a projected shortfall of ${formatCurrency(ra.passiveIncomeGap)}/month. You would need an additional portfolio of ${formatCurrency(ra.passiveIncomeGap * 12 / (rg.safeWithdrawalRate / 100))} to close the gap.`
+                      : `There is a projected shortfall of ${formatCurrency(ra.passiveIncomeGap)}/month.${rg.safeWithdrawalRate > 0 ? ` You would need an additional portfolio of ${formatCurrency(ra.passiveIncomeGap * 12 / (rg.safeWithdrawalRate / 100))} to close the gap.` : ''}`
                     }
                   </p>
                 </div>
@@ -260,7 +259,6 @@ export default function RetirementPage() {
                     label={{ value: 'Retire', position: 'insideTopRight', fontSize: 10, fill: '#ef4444' }} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Area type="monotone" dataKey="Liquid Assets" stroke="#0d9488" fill="url(#nwG)" strokeWidth={2.5} />
-                  <Area type="monotone" dataKey="CPF Total"     stroke="#8b5cf6" fill="none" strokeWidth={1.5} strokeDasharray="4 2" />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>

@@ -71,8 +71,8 @@ export function calculateRetirementAnalysis(
 
   // ── Portfolio corpus needed to fund the gap via SWR ───────────────────────
   // Additional corpus needed on top of current portfolio to close the monthly gap
-  const additionalCorpusNeeded = passiveIncomeGap > 0 ? (passiveIncomeGap * 12) / swr : 0;
-  const corpusRequired  = (monthlyPassiveIncomeTarget * 12) / swr;
+  const additionalCorpusNeeded = (passiveIncomeGap > 0 && swr > 0) ? (passiveIncomeGap * 12) / swr : 0;
+  const corpusRequired  = swr > 0 ? (monthlyPassiveIncomeTarget * 12) / swr : 0;
   const corpusProjected = investableAtRetirement;
 
   // ── Sustainability ─────────────────────────────────────────────────────────
@@ -84,16 +84,23 @@ export function calculateRetirementAnalysis(
     (lastProjection?.srsBalance ?? 0)
   );
 
-  // Base verdict on whether liquid assets actually run out, not on the LFR.
-  // The LFR understates funding because it omits corpus drawdowns as income.
   let fundingStatus: RetirementAnalysis['fundingStatus'];
+  const lifeExpectancy = plan.client.lifeExpectancy ?? 100;
+
   if (exhaustionAge === null) {
     // Liquid assets survive to end of plan
     fundingStatus = passiveIncomeGap <= 0 && surplusAtAge100 > 0
       ? 'comfortable'
       : 'adequate';
+  } else if (passiveIncomeGap <= 0) {
+    // Income analysis confirms no gap — the asset depletion is a simulation
+    // artefact from the SWR approximation vs actual year-by-year drawdown.
+    // The ongoing income sources (CPF LIFE + passive) cover the target, so
+    // cap the verdict at at-risk rather than jumping to significant-shortfall.
+    const yearsShort = lifeExpectancy - exhaustionAge;
+    fundingStatus = yearsShort <= 10 ? 'adequate' : 'at-risk';
   } else {
-    const lifeExpectancy = plan.client.lifeExpectancy ?? 100;
+    // Both an income gap AND asset depletion — genuine shortfall
     const yearsShort = lifeExpectancy - exhaustionAge;
     if (yearsShort <= 5)       fundingStatus = 'adequate';
     else if (yearsShort <= 15) fundingStatus = 'at-risk';

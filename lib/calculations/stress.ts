@@ -174,10 +174,19 @@ export function runCriticalIllnessScenario(plan: FinancialPlan, input: StressTes
   const diagnosisYear  = CURRENT_YEAR + yearsToAge;
   const inflationRate  = plan.assumptions?.generalInflation ?? 2.5;
 
-  // CI/ECI insurance payout
+  // Insurance payout depends on type: early CI uses ECI sum assured, late CI uses CI sum assured
+  const ciType = input.criticalIllnessType ?? 'late';
   const ciPayout = plan.insurance.policies
     .filter((p) => ['ci', 'eci', 'term', 'wholeLife'].includes(p.type))
-    .reduce((s, p) => s + (p.ciSumAssured ?? 0) + (p.eciSumAssured ?? 0), 0);
+    .reduce((s, p) => {
+      if (ciType === 'early') {
+        // Early CI: ECI policies + ECI riders on term/whole life
+        return s + (p.eciSumAssured ?? 0) + (p.type === 'eci' ? (p.sumAssured ?? 0) : 0);
+      } else {
+        // Late CI: CI policies + CI riders on term/whole life
+        return s + (p.ciSumAssured ?? 0) + (p.type === 'ci' ? (p.sumAssured ?? 0) : 0);
+      }
+    }, 0);
 
   const netMedicalCost = Math.max(0, input.criticalIllnessMedicalCost - ciPayout);
 
@@ -230,7 +239,7 @@ export function runCriticalIllnessScenario(plan: FinancialPlan, input: StressTes
   const pct      = retEntry?.baseCase ? (impact / Math.abs(retEntry.baseCase)) * 100 : 0;
 
   return {
-    scenarioName: 'Critical Illness',
+    scenarioName: ciType === 'early' ? 'Early Critical Illness (ECI)' : 'Late Critical Illness (CI)',
     assetExhaustionAge: exhaustionAge,
     retirementImpact: impact < 0
       ? `Liquid assets at retirement reduced by ${formatCurrencySimple(Math.abs(impact))}`
@@ -243,7 +252,7 @@ export function runCriticalIllnessScenario(plan: FinancialPlan, input: StressTes
     chartData,
     eventBreakdown: [
       { label: 'Medical cost (gross)',                                                              amount: input.criticalIllnessMedicalCost },
-      { label: 'CI/ECI insurance payout',                                                          amount: -ciPayout },
+      { label: ciType === 'early' ? 'ECI insurance payout' : 'CI insurance payout',               amount: -ciPayout },
       { label: `Expenses during recovery (${recoveryMonths} mths × ${formatCurrencySimple(monthlyExpensesAtAge)}/mo)`, amount: expensesDuringRecovery },
       { label: `Lost salary income (${recoveryMonths} mths × ${formatCurrencySimple(monthlyIncomeAtAge)}/mo)`,         amount: lostIncome },
       { label: `Missed employer CPF (${(erRate * 100).toFixed(0)}%)`,                              amount: missedCPF },

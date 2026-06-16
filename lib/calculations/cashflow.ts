@@ -59,9 +59,9 @@ export function generateLifetimeCashflow(plan: FinancialPlan): YearlyProjection[
     }
 
     const rentalIncome = inflateValue(income.rentalIncome * 12, assumptions.propertyGrowthRate, yearsElapsed);
-    const dividendIncome = income.dividendIncome * 12;
+    const dividendIncome = inflateValue(income.dividendIncome * 12, assumptions.generalInflation, yearsElapsed);
     const businessIncome = isRetired ? 0 : income.businessIncome * 12;
-    const otherPassive = income.otherIncome * 12;
+    const otherPassive = inflateValue(income.otherIncome * 12, assumptions.generalInflation, yearsElapsed);
 
     const passiveIncome = rentalIncome + dividendIncome + businessIncome + otherPassive;
 
@@ -129,7 +129,15 @@ export function generateLifetimeCashflow(plan: FinancialPlan): YearlyProjection[
       cashBalance += oaWithdrawal;
     }
 
-    const totalIncome = employmentIncome + passiveIncome + cpfLifePayout;
+    // SWR withdrawal in retirement — drawn from investment portfolio as income
+    let swrWithdrawal = 0;
+    if (isRetired && investmentBalance > 0) {
+      const swr = plan.retirementGoals?.safeWithdrawalRate ?? 4;
+      swrWithdrawal = Math.min(investmentBalance * (swr / 100), investmentBalance);
+      investmentBalance -= swrWithdrawal;
+    }
+
+    const totalIncome = employmentIncome + passiveIncome + cpfLifePayout + swrWithdrawal;
 
     // ── TAXES ─────────────────────────────────────────────────────────────────
     const chargeableIncome = calculateChargeableIncome(
@@ -149,10 +157,13 @@ export function generateLifetimeCashflow(plan: FinancialPlan): YearlyProjection[
 
     const inflatedExpenses = inflateValue(baseMonthlyExpenses * 12, assumptions.generalInflation, yearsElapsed);
 
-    // Extra healthcare inflation applies in all phases
+    // Extra healthcare inflation only applies pre-retirement where expenses are itemised.
+    // Post-retirement the user's stated monthly expense figure is taken as-is (they set it
+    // knowing their healthcare costs), so we don't double-count a healthcare surcharge on top.
     const healthcareBase  = expenses.healthcare * 12;
-    const healthcareExtra = inflateValue(healthcareBase, assumptions.healthcareInflation, yearsElapsed) -
-                            inflateValue(healthcareBase, assumptions.generalInflation, yearsElapsed);
+    const healthcareExtra = isRetired ? 0 :
+      inflateValue(healthcareBase, assumptions.healthcareInflation, yearsElapsed) -
+      inflateValue(healthcareBase, assumptions.generalInflation, yearsElapsed);
 
     const totalExpenses = inflatedExpenses + Math.max(0, healthcareExtra);
 
@@ -192,8 +203,10 @@ export function generateLifetimeCashflow(plan: FinancialPlan): YearlyProjection[
     const netCashflow = totalIncome - totalOutflows - cpfResult.employeeContrib;
 
     // ── UPDATE BALANCES ───────────────────────────────────────────────────────
-    // Explicit monthly contributions go directly into investment balance
-    const annualContributions = assets.investments.reduce((s, inv) => s + (inv.monthlyContribution ?? 0) * 12, 0);
+    // Investment contributions stop at retirement — passive income and SWR cover expenses
+    const annualContributions = isRetired
+      ? 0
+      : assets.investments.reduce((s, inv) => s + (inv.monthlyContribution ?? 0) * 12, 0);
     investmentBalance += annualContributions;
 
     // Remaining surplus (after contributions already accounted for) split between cash and investments
@@ -204,7 +217,7 @@ export function generateLifetimeCashflow(plan: FinancialPlan): YearlyProjection[
       investmentBalance += surplusAfterContribs * 0.7;
     } else {
       // Deficit: draw from cash first, then investments
-      const deficit = Math.abs(netCashflow);
+      const deficit = Math.abs(surplusAfterContribs);
       if (cashBalance >= deficit) {
         cashBalance -= deficit;
       } else {
@@ -256,6 +269,7 @@ export function generateLifetimeCashflow(plan: FinancialPlan): YearlyProjection[
       employmentIncome,
       passiveIncome,
       cpfLifePayout,
+      swrWithdrawal,
       totalIncome,
       totalExpenses,
       goalFunding,

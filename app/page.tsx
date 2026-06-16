@@ -113,9 +113,7 @@ export default function DashboardPage() {
     .filter((p) => p.age % 5 === 0 || p.age === plan.client.age)
     .map((p) => ({
       age: p.age,
-      'Net Worth': Math.max(0, p.netWorth),
-      'Investments': p.investmentBalance,
-      'CPF': p.cpfTotal,
+      'Liquid Assets': Math.max(0, p.cashBalance + p.investmentBalance + p.srsBalance + (p.age >= 55 ? p.cpfOA : 0)),
     }));
 
   // Income vs expenses for working years
@@ -281,8 +279,7 @@ export default function DashboardPage() {
                 <XAxis dataKey="age" tick={{ fontSize: 11 }} label={{ value: 'Age', position: 'insideBottom', offset: -2, fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000000).toFixed(1)}M`} />
                 <Tooltip formatter={(v: number) => formatCurrency(v)} labelFormatter={(l) => `Age ${l}`} />
-                <Area type="monotone" dataKey="Net Worth" stroke="#0d9488" fill="url(#nwGrad)" strokeWidth={2} />
-                <Area type="monotone" dataKey="CPF" stroke="#4f46e5" fill="none" strokeWidth={1.5} strokeDasharray="4 4" />
+                <Area type="monotone" dataKey="Liquid Assets" stroke="#0d9488" fill="url(#nwGrad)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
