@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Friendly teal-indigo palette */
+    --background: 210 30% 97%;
+    --foreground: 215 35% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 35% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 35% 12%;
+    --primary: 174 72% 32%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 174 20% 93%;
+    --secondary-foreground: 174 50% 22%;
+    --muted: 210 20% 94%;
+    --muted-foreground: 215 14% 48%;
+    --accent: 174 35% 88%;
+    --accent-foreground: 174 72% 22%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 20% 89%;
+    --input: 214 20% 89%;
+    --ring: 174 72% 32%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 215 35% 8%;
+    --foreground: 174 15% 93%;
+    --card: 215 28% 11%;
+    --card-foreground: 174 15% 93%;
+    --popover: 215 28% 11%;
+    --popover-foreground: 174 15% 93%;
+    --primary: 174 55% 46%;
+    --primary-foreground: 215 35% 8%;
+    --secondary: 215 22% 17%;
+    --secondary-foreground: 174 15% 88%;
+    --muted: 215 22% 17%;
+    --muted-foreground: 215 14% 60%;
+    --accent: 215 22% 17%;
+    --accent-foreground: 174 15% 88%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 174 15% 93%;
+    --border: 215 22% 17%;
+    --input: 215 22% 17%;
+    --ring: 174 55% 42%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Smooth scrolling and transitions */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  /* Card depth for elevated cards */
+  .card-hover {
+    @apply transition-shadow duration-200 hover:shadow-md;
+  }
+}
