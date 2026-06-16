@@ -277,9 +277,9 @@ export default function ReportsPage() {
                 <DataRow label="Retirement Corpus Required" value={formatCurrency(retirementAnalysis.corpusRequired)} />
                 <DataRow label="Retirement Corpus Projected" value={formatCurrency(retirementAnalysis.corpusProjected)} highlight />
                 <DataRow label="Corpus Surplus / (Deficit)" value={formatCurrency(retirementAnalysis.corpusProjected - retirementAnalysis.corpusRequired)} highlight />
-                <DataRow label="Monthly Expenses at Retirement" value={formatCurrency(retirementAnalysis.monthlyRetirementExpenses)} />
+                <DataRow label="Monthly Expenses at Retirement" value={formatCurrency(retirementAnalysis.monthlyExpenseTarget)} />
                 <DataRow label="CPF LIFE Monthly Income" value={formatCurrency(retirementAnalysis.cpfLifeMonthlyIncome)} />
-                <DataRow label="Annual Income Gap (from corpus)" value={formatCurrency(retirementAnalysis.retirementIncomeGap * 12)} />
+                <DataRow label="Monthly Income Gap" value={formatCurrency(retirementAnalysis.passiveIncomeGap)} />
               </div>
               <div>
                 <DataRow label="Asset Exhaustion Age" value={retirementAnalysis.assetExhaustionAge ? `Age ${retirementAnalysis.assetExhaustionAge}` : 'Survives to Age 100 ✓'} />

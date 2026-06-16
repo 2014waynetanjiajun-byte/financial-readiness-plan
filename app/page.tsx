@@ -399,8 +399,8 @@ export default function DashboardPage() {
                   { label: 'Corpus Required', value: formatCurrency(retirementAnalysis.corpusRequired), highlight: false },
                   { label: 'Corpus Projected', value: formatCurrency(retirementAnalysis.corpusProjected), highlight: true },
                   { label: 'CPF LIFE (monthly)', value: formatCurrency(retirementAnalysis.cpfLifeMonthlyIncome), highlight: false },
-                  { label: 'Monthly Expenses at Retirement', value: formatCurrency(retirementAnalysis.monthlyRetirementExpenses), highlight: false },
-                  { label: 'Income Gap (annual)', value: formatCurrency(retirementAnalysis.retirementIncomeGap * 12), highlight: false },
+                  { label: 'Monthly Expenses at Retirement', value: formatCurrency(retirementAnalysis.monthlyExpenseTarget), highlight: false },
+                  { label: 'Income Gap (monthly)', value: formatCurrency(retirementAnalysis.passiveIncomeGap), highlight: false },
                   { label: 'Funding Status', value: statusConfig.label, highlight: false, badge: true, badgeVariant: statusConfig.color },
                 ].map((item) => (
                   <div key={item.label} className="flex justify-between items-center text-sm">
