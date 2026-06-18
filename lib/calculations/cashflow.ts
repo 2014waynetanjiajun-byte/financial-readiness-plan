@@ -132,16 +132,6 @@ export function generateLifetimeCashflow(plan: FinancialPlan): YearlyProjection[
       liquidBalance += oaWithdrawal;
     }
 
-    // SWR withdrawal in retirement — drawn from the liquid portfolio as income
-    let swrWithdrawal = 0;
-    if (isRetired && liquidBalance > 0) {
-      const swr = plan.retirementGoals?.safeWithdrawalRate ?? 4;
-      swrWithdrawal = Math.min(liquidBalance * (swr / 100), liquidBalance);
-      liquidBalance -= swrWithdrawal;
-    }
-
-    const totalIncome = employmentIncome + passiveIncome + cpfLifePayout + swrWithdrawal;
-
     // ── TAXES ─────────────────────────────────────────────────────────────────
     const chargeableIncome = calculateChargeableIncome(
       employmentIncome,
@@ -169,6 +159,19 @@ export function generateLifetimeCashflow(plan: FinancialPlan): YearlyProjection[
       inflateValue(healthcareBase, assumptions.generalInflation, yearsElapsed);
 
     const totalExpenses = inflatedExpenses + Math.max(0, healthcareExtra);
+
+    // SWR withdrawal in retirement — an optional top-up that only covers the shortfall
+    // between expenses and other income (passive + CPF LIFE), capped at SWR% of the
+    // portfolio. If passive income already covers expenses, no withdrawal is taken.
+    let swrWithdrawal = 0;
+    if (isRetired && liquidBalance > 0) {
+      const swr = plan.retirementGoals?.safeWithdrawalRate ?? 4;
+      const incomeGap = Math.max(0, totalExpenses - passiveIncome - cpfLifePayout);
+      swrWithdrawal = Math.min(incomeGap, liquidBalance * (swr / 100));
+      liquidBalance -= swrWithdrawal;
+    }
+
+    const totalIncome = employmentIncome + passiveIncome + cpfLifePayout + swrWithdrawal;
 
     // ── GOAL FUNDING ──────────────────────────────────────────────────────────
     let goalFunding = 0;
