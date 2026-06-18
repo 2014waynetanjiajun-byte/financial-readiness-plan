@@ -109,13 +109,13 @@ export default function DashboardPage() {
   const savingsRate = monthlyIncome > 0 ? ((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100 : 0;
 
   // Net worth over time (every 5 years)
+  // CPF OA (from 55) and SRS (from retirement age) are folded into investmentBalance
+  // by the engine once accessible, so this is just the combined liquid pool.
   const netWorthData = projections
     .filter((p) => p.age % 5 === 0 || p.age === plan.client.age)
     .map((p) => ({
       age: p.age,
-      'Liquid Assets': Math.max(0, p.cashBalance + p.investmentBalance +
-        (p.age >= 55 ? p.cpfOA : 0) +
-        (p.isRetired ? p.srsBalance : 0)),
+      'Liquid Assets': Math.max(0, p.cashBalance + p.investmentBalance),
     }));
 
   // Income vs expenses for working years

@@ -6,9 +6,10 @@ function applyScenario(plan: FinancialPlan, modifyFn: (p: FinancialPlan) => Fina
   return modifyFn(JSON.parse(JSON.stringify(plan)));
 }
 
-// Liquid assets = cash + investments + SRS (SRS only payable from retirement; excludes property and pre-55 CPF)
+// Liquid assets = cash + investments (CPF OA from 55 and SRS from retirement age are
+// already folded into investmentBalance by the engine once accessible)
 function liquidAt(p: ReturnType<typeof generateLifetimeCashflow>[number]): number {
-  return (p.cashBalance ?? 0) + (p.investmentBalance ?? 0) + (p.isRetired ? (p.srsBalance ?? 0) : 0);
+  return (p.cashBalance ?? 0) + (p.investmentBalance ?? 0);
 }
 
 function impactVsBase(

@@ -75,11 +75,12 @@ type ScenarioKey = typeof SCENARIOS[number]['key'];
 // ─── Result card ──────────────────────────────────────────────────────────────
 
 function liquidAssets(p: any): number {
-  // SRS is only paid out from retirement age
-  const base = (p.cashBalance ?? 0) + (p.investmentBalance ?? 0) + (p.isRetired ? (p.srsBalance ?? 0) : 0);
-  // CPF is only accessible (liquid) from age 55 onwards
-  const cpf = p.age >= 55 ? (p.cpfOA ?? 0) + (p.cpfRA ?? 0) : 0;
-  return Math.max(0, base + cpf);
+  // CPF OA (from 55) and SRS (from retirement age) are already folded into
+  // investmentBalance by the engine once accessible. CPF RA is added separately
+  // here as it's not part of the merged pool.
+  const base = (p.cashBalance ?? 0) + (p.investmentBalance ?? 0);
+  const cpfRA = p.age >= 55 ? (p.cpfRA ?? 0) : 0;
+  return Math.max(0, base + cpfRA);
 }
 
 function ResultCard({ result, baseProjections, stressTestInput }: {

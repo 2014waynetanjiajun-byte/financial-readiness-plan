@@ -113,23 +113,19 @@ export function generateLifetimeCashflow(plan: FinancialPlan): YearlyProjection[
 
     cpfLifePayout = cpfResult.cpfLifeMonthly * 12;
 
-    // ── OA WITHDRAWAL INTENT ──────────────────────────────────────────────────
-    let oaWithdrawal = 0;
-    const oaIntent = cpf.oaWithdrawalIntent ?? 'compound';
-    const oaWithdrawAge = cpf.oaWithdrawalAge ?? 55;
-
-    if (oaIntent === 'lump_sum' && age === oaWithdrawAge && cpfOA > 0) {
-      // Withdraw specified amount (or full balance if amount is 0 / exceeds balance)
-      const requestedAmount = cpf.oaLumpSumAmount ?? 0;
-      oaWithdrawal = requestedAmount > 0 ? Math.min(requestedAmount, cpfOA) : cpfOA;
-      liquidBalance += oaWithdrawal;
-      cpfOA = Math.max(0, cpfOA - oaWithdrawal);
-    } else if (oaIntent === 'monthly' && age >= oaWithdrawAge && cpfOA > 0) {
-      // Draw monthly amount annually until OA is exhausted
-      const annual = Math.min((cpf.oaMonthlyDrawdown ?? 0) * 12, cpfOA);
-      oaWithdrawal = annual;
-      cpfOA = Math.max(0, cpfOA - annual);
-      liquidBalance += oaWithdrawal;
+    // ── MERGE CPF OA AND SRS INTO THE LIQUID POOL ─────────────────────────────
+    // CPF OA becomes withdrawable at 55 and SRS is payable from retirement age —
+    // once accessible, both are folded directly into the single liquid pool so
+    // they're available (and can be drawn down) to cover expenses, just like cash
+    // and investments. This applies regardless of the CPF tab's OA withdrawal
+    // intent setting.
+    if (age >= 55 && cpfOA > 0) {
+      liquidBalance += cpfOA;
+      cpfOA = 0;
+    }
+    if (isRetired && srsBalance > 0) {
+      liquidBalance += srsBalance;
+      srsBalance = 0;
     }
 
     // ── TAXES ─────────────────────────────────────────────────────────────────
