@@ -15,8 +15,11 @@ export function generateLifetimeCashflow(plan: FinancialPlan): YearlyProjection[
   const projections: YearlyProjection[] = [];
 
   // ── Initial balances ──────────────────────────────────────────────────────
-  let cashBalance = assets.savingsAccounts + assets.fixedDeposits + assets.singaporeSavingsBonds;
-  let investmentBalance = assets.investments.reduce((s, inv) => s + inv.currentValue, 0);
+  // Cash and investments are tracked as a single combined liquid pool — there's no
+  // split between "cash" and "investments" buckets; surplus/deficit and growth all
+  // apply to the one number.
+  let liquidBalance = assets.savingsAccounts + assets.fixedDeposits + assets.singaporeSavingsBonds +
+    assets.investments.reduce((s, inv) => s + inv.currentValue, 0);
   let srsBalance = assets.srsBalance;
   let businessValue = assets.businessValuation * (assets.businessOwnershipPct / 100);
 
@@ -119,22 +122,22 @@ export function generateLifetimeCashflow(plan: FinancialPlan): YearlyProjection[
       // Withdraw specified amount (or full balance if amount is 0 / exceeds balance)
       const requestedAmount = cpf.oaLumpSumAmount ?? 0;
       oaWithdrawal = requestedAmount > 0 ? Math.min(requestedAmount, cpfOA) : cpfOA;
-      cashBalance += oaWithdrawal;
+      liquidBalance += oaWithdrawal;
       cpfOA = Math.max(0, cpfOA - oaWithdrawal);
     } else if (oaIntent === 'monthly' && age >= oaWithdrawAge && cpfOA > 0) {
       // Draw monthly amount annually until OA is exhausted
       const annual = Math.min((cpf.oaMonthlyDrawdown ?? 0) * 12, cpfOA);
       oaWithdrawal = annual;
       cpfOA = Math.max(0, cpfOA - annual);
-      cashBalance += oaWithdrawal;
+      liquidBalance += oaWithdrawal;
     }
 
-    // SWR withdrawal in retirement — drawn from investment portfolio as income
+    // SWR withdrawal in retirement — drawn from the liquid portfolio as income
     let swrWithdrawal = 0;
-    if (isRetired && investmentBalance > 0) {
+    if (isRetired && liquidBalance > 0) {
       const swr = plan.retirementGoals?.safeWithdrawalRate ?? 4;
-      swrWithdrawal = Math.min(investmentBalance * (swr / 100), investmentBalance);
-      investmentBalance -= swrWithdrawal;
+      swrWithdrawal = Math.min(liquidBalance * (swr / 100), liquidBalance);
+      liquidBalance -= swrWithdrawal;
     }
 
     const totalIncome = employmentIncome + passiveIncome + cpfLifePayout + swrWithdrawal;
@@ -202,35 +205,19 @@ export function generateLifetimeCashflow(plan: FinancialPlan): YearlyProjection[
     const totalOutflows = totalExpenses + goalFunding + taxes + debtRepayments;
     const netCashflow = totalIncome - totalOutflows - cpfResult.employeeContrib;
 
-    // ── UPDATE BALANCES ───────────────────────────────────────────────────────
+    // ── UPDATE BALANCE ────────────────────────────────────────────────────────
     // Investment contributions stop at retirement — passive income and SWR cover expenses
     const annualContributions = isRetired
       ? 0
       : assets.investments.reduce((s, inv) => s + (inv.monthlyContribution ?? 0) * 12, 0);
-    investmentBalance += annualContributions;
 
-    // Remaining surplus (after contributions already accounted for) split between cash and investments
-    const surplusAfterContribs = netCashflow - annualContributions;
-    if (surplusAfterContribs >= 0) {
-      // Surplus: split between cash and investments
-      cashBalance += surplusAfterContribs * 0.3;
-      investmentBalance += surplusAfterContribs * 0.7;
-    } else {
-      // Deficit: draw from cash first, then investments
-      const deficit = Math.abs(surplusAfterContribs);
-      if (cashBalance >= deficit) {
-        cashBalance -= deficit;
-      } else {
-        const fromCash = cashBalance;
-        cashBalance = 0;
-        const fromInvestments = deficit - fromCash;
-        investmentBalance = Math.max(0, investmentBalance - fromInvestments);
-      }
-    }
+    // One combined liquid pool: contributions go in, net cashflow (surplus or deficit) applies directly
+    liquidBalance += annualContributions + netCashflow;
+    liquidBalance = Math.max(0, liquidBalance);
 
     // Investment growth
     const weightedReturn = computeWeightedReturn(assets.investments, assumptions.investmentReturn);
-    investmentBalance *= (1 + weightedReturn / 100);
+    liquidBalance *= (1 + weightedReturn / 100);
     srsBalance *= (1 + weightedReturn / 100);
     businessValue *= (1 + assumptions.investmentReturn / 100);
 
@@ -248,8 +235,7 @@ export function generateLifetimeCashflow(plan: FinancialPlan): YearlyProjection[
     const totalLiabilities = Object.values(liabilityBalances).reduce((s, v) => s + v, 0) + totalPropertyLoans;
 
     const totalAssets =
-      cashBalance +
-      investmentBalance +
+      liquidBalance +
       srsBalance +
       businessValue +
       totalPropertyValue +
@@ -285,8 +271,10 @@ export function generateLifetimeCashflow(plan: FinancialPlan): YearlyProjection[
       cpfMA,
       cpfRA,
       cpfTotal: cpfOA + cpfSA + cpfMA + cpfRA,
-      cashBalance,
-      investmentBalance,
+      // Cash and investments are a single combined pool — stored under investmentBalance,
+      // cashBalance kept at 0 for backward compatibility with code that sums the two.
+      cashBalance: 0,
+      investmentBalance: liquidBalance,
       propertyValue: totalPropertyValue,
       srsBalance,
       businessValue,
