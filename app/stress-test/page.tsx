@@ -75,7 +75,8 @@ type ScenarioKey = typeof SCENARIOS[number]['key'];
 // ─── Result card ──────────────────────────────────────────────────────────────
 
 function liquidAssets(p: any): number {
-  const base = (p.cashBalance ?? 0) + (p.investmentBalance ?? 0) + (p.srsBalance ?? 0);
+  // SRS is only paid out from retirement age
+  const base = (p.cashBalance ?? 0) + (p.investmentBalance ?? 0) + (p.isRetired ? (p.srsBalance ?? 0) : 0);
   // CPF is only accessible (liquid) from age 55 onwards
   const cpf = p.age >= 55 ? (p.cpfOA ?? 0) + (p.cpfRA ?? 0) : 0;
   return Math.max(0, base + cpf);

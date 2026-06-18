@@ -113,7 +113,9 @@ export default function DashboardPage() {
     .filter((p) => p.age % 5 === 0 || p.age === plan.client.age)
     .map((p) => ({
       age: p.age,
-      'Liquid Assets': Math.max(0, p.cashBalance + p.investmentBalance + p.srsBalance + (p.age >= 55 ? p.cpfOA : 0)),
+      'Liquid Assets': Math.max(0, p.cashBalance + p.investmentBalance +
+        (p.age >= 55 ? p.cpfOA : 0) +
+        (p.isRetired ? p.srsBalance : 0)),
     }));
 
   // Income vs expenses for working years

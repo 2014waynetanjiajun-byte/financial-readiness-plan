@@ -42,12 +42,14 @@ export default function RetirementPage() {
   const fundingStatus = retirementAnalysis?.fundingStatus ?? 'adequate';
   const statusConfig  = FUNDING_STATUS_CONFIG[fundingStatus];
 
-  // Net worth chart — CPF OA becomes accessible at 55, so include it in liquid assets from then
+  // Net worth chart — CPF OA becomes accessible at 55; SRS is only paid out from retirement age
   const nwData = projections
     .filter((p) => p.age % 5 === 0 || p.age === plan.client.age || p.age === plan.client.retirementAge || p.age === plan.client.lifeExpectancy)
     .map((p) => ({
       age: p.age,
-      'Liquid Assets': Math.max(0, p.cashBalance + p.investmentBalance + p.srsBalance + (p.age >= 55 ? p.cpfOA : 0)),
+      'Liquid Assets': Math.max(0, p.cashBalance + p.investmentBalance +
+        (p.age >= 55 ? p.cpfOA : 0) +
+        (p.isRetired ? p.srsBalance : 0)),
     }));
 
   // Passive income sources breakdown (bar)
@@ -295,7 +297,7 @@ export default function RetirementPage() {
                           <td className={`py-1.5 pr-3 font-medium ${p.netCashflow >= 0 ? 'text-green-700' : 'text-red-600'}`}>
                             {p.netCashflow >= 0 ? '+' : ''}{formatCurrency(p.netCashflow)}
                           </td>
-                          <td className="py-1.5 pr-3 font-semibold">{formatCurrency(p.cashBalance + p.investmentBalance + p.srsBalance)}</td>
+                          <td className="py-1.5 pr-3 font-semibold">{formatCurrency(p.cashBalance + p.investmentBalance + (p.isRetired ? p.srsBalance : 0))}</td>
                           <td className="py-1.5 text-purple-700">{formatCurrency(p.cpfTotal)}</td>
                         </tr>
                       ))}

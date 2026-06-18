@@ -202,7 +202,9 @@ export function generateLifetimeCashflow(plan: FinancialPlan): YearlyProjection[
       }
     });
 
-    const totalOutflows = totalExpenses + goalFunding + taxes + debtRepayments;
+    // Post-retirement, only the stated retirement expense target counts against liquid
+    // assets — goal funding and debt repayments are excluded (taxes are already 0).
+    const totalOutflows = isRetired ? totalExpenses : totalExpenses + goalFunding + taxes + debtRepayments;
     const netCashflow = totalIncome - totalOutflows - cpfResult.employeeContrib;
 
     // ── UPDATE BALANCE ────────────────────────────────────────────────────────
